@@ -185,9 +185,9 @@ function objToFen(obj) {
   return fen;
 }
 
-window['ChessBoard'] = window['ChessBoard'] || function(containerElOrId, cfg) {
+window['ChessBoard'] = window['ChessBoard'] || function(containerElOrId, config) {
 
-cfg = cfg || {};
+var cfg = cfg || {};
 
 //------------------------------------------------------------------------------
 // Constants
@@ -387,6 +387,24 @@ function checkDeps() {
   return true;
 }
 
+function parsePosition(position){
+    // start position
+    if (typeof position === 'string' && position.toLowerCase() === 'start') {
+      return deepCopy(START_POSITION);
+    }
+
+    // convert FEN to position object
+    if (validFen(position) === true) {
+      return fenToObj(position);
+    }
+
+    // validate position object
+    if (validPositionObject(position))
+        return deepCopy(position);
+    else
+      error(6482, 'Invalid value passed to the position method.', position);
+}
+
 function validAnimationSpeed(speed) {
   if (speed === 'fast' || speed === 'slow') {
     return true;
@@ -399,92 +417,76 @@ function validAnimationSpeed(speed) {
   return (speed >= 0);
 }
 
+var defaultCfg = {
+  orientation : 'white',
+  showNotation : true,
+  draggable : false,
+  dropOffBoard : 'snapback',
+  sparePieces : false
+  pieceTheme : 'img/chesspieces/wikipedia/{piece}.png',
+  appearSpeed : 200,
+  moveSpeed : 200,
+  snapbackSpeed : 50,
+  snapSpeed : 25,
+  trashSpeed : 100
+};
+
+function validateConfig(config) {
+    var vConfig = {};
+    for (var i in config) {
+        var isValid = false;
+        switch (i) {
+            case 'showNotation':
+            case 'draggable':
+            case 'sparePieces':
+                isValid = typeof config[i] === "boolean";
+                break;
+            case 'orientation':
+                isValid = config[i] === "white" || config[i] === "black";
+                break;
+            case 'dropOffBoard':
+                isValid = config[i] === "snapback" || config[i] === "trash";
+                break;
+            case 'pieceTheme':
+                isValid = typeof config[i] !== 'string' && typeof config[i] !== 'function';
+                break;
+            case 'appearSpeed':
+            case 'moveSpeed':
+            case 'snapbackSpeed':
+            case 'snapSpeed':
+            case 'trashSpeed':
+                isValid = validAnimationSpeed(config[i]);
+                break;
+            case 'position':
+                isValid = config[i] === 'start' || validFen(config[i]) || validPositionObject(config[i]);
+                break;
+        }
+        if (isValid)
+            vConfig[i] = config[i];
+    }
+    return vConfig;
+}
+
 // validate config / set default options
 function expandConfig() {
-  if (typeof cfg === 'string' || validPositionObject(cfg) === true) {
-    cfg = {
-      position: cfg
+  if (typeof config === 'string' || validPositionObject(config) === true) {
+    config = {
+      position: config
     };
   }
 
-  // default for orientation is white
-  if (cfg.orientation !== 'black') {
-    cfg.orientation = 'white';
-  }
+  config = validateConfig(config);
+
+  $.extend(cfg, defaultCfg, config);
+
   CURRENT_ORIENTATION = cfg.orientation;
 
-  // default for showNotation is true
-  if (cfg.showNotation !== false) {
-    cfg.showNotation = true;
-  }
-
-  // default for draggable is false
-  if (cfg.draggable !== true) {
-    cfg.draggable = false;
-  }
-
-  // default for dropOffBoard is 'snapback'
-  if (cfg.dropOffBoard !== 'trash') {
-    cfg.dropOffBoard = 'snapback';
-  }
-
-  // default for sparePieces is false
-  if (cfg.sparePieces !== true) {
-    cfg.sparePieces = false;
-  }
-
   // draggable must be true if sparePieces is enabled
-  if (cfg.sparePieces === true) {
+  if (cfg.sparePieces === true)
     cfg.draggable = true;
-  }
 
-  // default piece theme is wikipedia
-  if (cfg.hasOwnProperty('pieceTheme') !== true ||
-      (typeof cfg.pieceTheme !== 'string' &&
-       typeof cfg.pieceTheme !== 'function')) {
-    cfg.pieceTheme = 'img/chesspieces/wikipedia/{piece}.png';
-  }
-
-  // animation speeds
-  if (cfg.hasOwnProperty('appearSpeed') !== true ||
-      validAnimationSpeed(cfg.appearSpeed) !== true) {
-    cfg.appearSpeed = 200;
-  }
-  if (cfg.hasOwnProperty('moveSpeed') !== true ||
-      validAnimationSpeed(cfg.moveSpeed) !== true) {
-    cfg.moveSpeed = 200;
-  }
-  if (cfg.hasOwnProperty('snapbackSpeed') !== true ||
-      validAnimationSpeed(cfg.snapbackSpeed) !== true) {
-    cfg.snapbackSpeed = 50;
-  }
-  if (cfg.hasOwnProperty('snapSpeed') !== true ||
-      validAnimationSpeed(cfg.snapSpeed) !== true) {
-    cfg.snapSpeed = 25;
-  }
-  if (cfg.hasOwnProperty('trashSpeed') !== true ||
-      validAnimationSpeed(cfg.trashSpeed) !== true) {
-    cfg.trashSpeed = 100;
-  }
-
-  // make sure position is valid
-  if (cfg.hasOwnProperty('position') === true) {
-    if (cfg.position === 'start') {
-      CURRENT_POSITION = deepCopy(START_POSITION);
-    }
-
-    else if (validFen(cfg.position) === true) {
-      CURRENT_POSITION = fenToObj(cfg.position);
-    }
-
-    else if (validPositionObject(cfg.position) === true) {
-      CURRENT_POSITION = deepCopy(cfg.position);
-    }
-
-    else {
-      error(7263, 'Invalid value passed to config.position.', cfg.position);
-    }
-  }
+  if (cfg.hasOwnProperty('position') === true)
+    CURRENT_POSITION = parsePosition(cfg.position);
 
   return true;
 }
@@ -1296,6 +1298,15 @@ function stopDraggedPiece(location) {
 // clear the board
 widget.clear = function(useAnimation) {
   widget.position({}, useAnimation);
+};
+
+// get or set config properties
+// TODO: write this, GitHub Issue #1
+widget.config = function(arg1, arg2) {
+  // get the current config
+  if (arguments.length === 0) {
+    return deepCopy(cfg);
+  }
 };
 
 // remove the widget from the page
