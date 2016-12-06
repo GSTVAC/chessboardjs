@@ -468,7 +468,7 @@ function validateConfig(config) {
 }
 
 // validate config / set default options
-function expandConfig() {
+function expandConfig(config) {
   if (typeof config === 'string' || validPositionObject(config) === true) {
     config = {
       position: config
@@ -477,16 +477,16 @@ function expandConfig() {
 
   config = validateConfig(config);
 
-  $.extend(cfg, defaultCfg, config);
+  cfg = $.extend({}, defaultCfg, cfg, config);
+
+  if (config.hasOwnProperty('position') === true)
+    CURRENT_POSITION = parsePosition(config.position);
 
   CURRENT_ORIENTATION = cfg.orientation;
 
   // draggable must be true if sparePieces is enabled
   if (cfg.sparePieces === true)
     cfg.draggable = true;
-
-  if (cfg.hasOwnProperty('position') === true)
-    CURRENT_POSITION = parsePosition(cfg.position);
 
   return true;
 }
@@ -1301,12 +1301,24 @@ widget.clear = function(useAnimation) {
 };
 
 // get or set config properties
-// TODO: write this, GitHub Issue #1
 widget.config = function(arg1, arg2) {
   // get the current config
   if (arguments.length === 0) {
     return deepCopy(cfg);
   }
+
+  var config = {};
+
+  if (typeof arg1 === 'object'){
+    config = arg1;
+  } else if (typeof arg1 === 'string') {
+    if (arg2)
+      config[arg1] = arg2;
+    else
+      config = arg1;
+  }
+
+  expandConfig(config);
 };
 
 // remove the widget from the page
@@ -1697,7 +1709,7 @@ function initDom() {
 
 function init() {
   if (checkDeps() !== true ||
-      expandConfig() !== true) return;
+      expandConfig(config) !== true) return;
 
   initDom();
   addEvents();
