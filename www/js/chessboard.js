@@ -422,7 +422,7 @@ var defaultCfg = {
   showNotation : true,
   draggable : false,
   dropOffBoard : 'snapback',
-  sparePieces : false
+  sparePieces : false,
   pieceTheme : 'img/chesspieces/wikipedia/{piece}.png',
   appearSpeed : 200,
   moveSpeed : 200,
@@ -432,39 +432,53 @@ var defaultCfg = {
 };
 
 function validateConfig(config) {
-    var vConfig = {};
-    for (var i in config) {
-        var isValid = false;
-        switch (i) {
-            case 'showNotation':
-            case 'draggable':
-            case 'sparePieces':
-                isValid = typeof config[i] === "boolean";
-                break;
-            case 'orientation':
-                isValid = config[i] === "white" || config[i] === "black";
-                break;
-            case 'dropOffBoard':
-                isValid = config[i] === "snapback" || config[i] === "trash";
-                break;
-            case 'pieceTheme':
-                isValid = typeof config[i] !== 'string' && typeof config[i] !== 'function';
-                break;
-            case 'appearSpeed':
-            case 'moveSpeed':
-            case 'snapbackSpeed':
-            case 'snapSpeed':
-            case 'trashSpeed':
-                isValid = validAnimationSpeed(config[i]);
-                break;
-            case 'position':
-                isValid = config[i] === 'start' || validFen(config[i]) || validPositionObject(config[i]);
-                break;
-        }
-        if (isValid)
-            vConfig[i] = config[i];
+  var vConfig = {};
+  for (var i in config) {
+    var isValid = false;
+    switch (i) {
+      case 'showNotation':
+      case 'draggable':
+      case 'sparePieces':
+        isValid = typeof config[i] === "boolean";
+        break;
+      case 'orientation':
+        isValid = config[i] === "white" || config[i] === "black";
+        break;
+      case 'dropOffBoard':
+        isValid = config[i] === "snapback" || config[i] === "trash";
+        break;
+      case 'pieceTheme':
+        isValid = typeof config[i] === 'string' || typeof config[i] === 'function';
+        break;
+      case 'appearSpeed':
+      case 'moveSpeed':
+      case 'snapbackSpeed':
+      case 'snapSpeed':
+      case 'trashSpeed':
+        isValid = validAnimationSpeed(config[i]);
+        break;
+      case 'position':
+        isValid = config[i] === 'start' || validFen(config[i]) || validPositionObject(config[i]);
+        break;
+      case 'showErrors':
+        isValid = typeof config[i] === 'boolean' || typeof config[i] === 'function' || config[i] === 'console' || config[i] === 'alert';
+        break;
+      case 'onChange':
+      case 'onDragStart':
+      case 'onDragMove':
+      case 'onDrop':
+      case 'onMouseoutSquare':
+      case 'onMouseoverSquare':
+      case 'onMoveEnd':
+      case 'onSnapbackEnd':
+      case 'onSnapEnd':
+        isValid = typeof config[i] === 'function';
+        break;
     }
-    return vConfig;
+    if (isValid)
+      vConfig[i] = config[i];
+  }
+  return vConfig;
 }
 
 // validate config / set default options
@@ -1312,7 +1326,7 @@ widget.config = function(arg1, arg2) {
   if (typeof arg1 === 'object'){
     config = arg1;
   } else if (typeof arg1 === 'string') {
-    if (arg2)
+    if (arg2 !== undefined)
       config[arg1] = arg2;
     else
       config = arg1;
