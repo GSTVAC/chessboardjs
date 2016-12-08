@@ -422,6 +422,7 @@ var defaultCfg = {
   showNotation : true,
   draggable : false,
   dropOffBoard : 'snapback',
+  movementType: 'drag',
   sparePieces : false,
   pieceTheme : 'img/chesspieces/wikipedia/{piece}.png',
   appearSpeed : 200,
@@ -446,6 +447,9 @@ function validateConfig(config) {
         break;
       case 'dropOffBoard':
         isValid = config[i] === "snapback" || config[i] === "trash";
+        break;
+      case 'movementType':
+        isValid = config[i] === "drag" || config[i] === "click";
         break;
       case 'pieceTheme':
         isValid = typeof config[i] === 'string' || typeof config[i] === 'function';
