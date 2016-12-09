@@ -1162,6 +1162,8 @@ function dropDraggedPieceOnSquare(square) {
     }
   };
 
+  draggedPieceEl.css('display', '');
+
   // snap the piece to the target square
   var opts = {
     duration: cfg.snapSpeed,
@@ -1198,19 +1200,26 @@ function beginDraggingPiece(source, piece, x, y) {
   // capture the x, y coords of all squares in memory
   captureSquareOffsets();
 
-  // create the dragged piece
-  draggedPieceEl.attr('src', buildPieceImgSrc(piece))
-    .css({
-      display: '',
-      position: 'absolute',
-      left: x - (SQUARE_SIZE / 2),
-      top: y - (SQUARE_SIZE / 2)
-    });
+  var display = '';
+  if (cfg.movementType == 'click'){
+    display = 'none';
+  }
+    // create the dragged piece
+    draggedPieceEl.attr('src', buildPieceImgSrc(piece))
+      .css({
+        display: display,
+        position: 'absolute',
+        left: x - (SQUARE_SIZE / 2),
+        top: y - (SQUARE_SIZE / 2)
+      });
+  //}
 
   if (source !== 'spare') {
     // highlight the source square and hide the piece
-    $('#' + SQUARE_ELS_IDS[source]).addClass(CSS.highlight1)
-      .find('.' + CSS.piece).css('display', 'none');
+    var $square = $('#' + SQUARE_ELS_IDS[source]);
+    $square.addClass(CSS.highlight1);
+    if (cfg.movementType == 'drag')
+      $square.find('.' + CSS.piece).css('display', 'none');
   }
 }
 
@@ -1252,10 +1261,10 @@ function updateDraggedPiece(x, y) {
 function stopDraggedPiece(location) {
   // determine what the action should be
   var action = 'drop';
-  if (location === 'offboard' && cfg.dropOffBoard === 'snapback') {
+  if (location === 'offboard' && (cfg.dropOffBoard === 'snapback' || cfg.movementType === 'click')) {
     action = 'snapback';
   }
-  if (location === 'offboard' && cfg.dropOffBoard === 'trash') {
+  if (location === 'offboard' && cfg.dropOffBoard === 'trash' && cfg.movementType === 'drag') {
     action = 'trash';
   }
 
@@ -1522,6 +1531,11 @@ function mousedownSquare(e) {
   // do nothing if we're not draggable
   if (cfg.draggable !== true) return;
 
+  if (DRAGGING_A_PIECE && cfg.movementType == 'click'){
+    mouseupWindow(e);
+    return;
+  }
+
   var square = $(this).attr('data-square');
 
   // no piece on this square
@@ -1667,10 +1681,15 @@ function addEvents() {
   // prevent browser "image drag"
   $('body').on('mousedown mousemove', '.' + CSS.piece, stopDefault);
 
-  // mouse drag pieces
-  boardEl.on('mousedown', '.' + CSS.square, mousedownSquare);
-  containerEl.on('mousedown', '.' + CSS.sparePieces + ' .' + CSS.piece,
-    mousedownSparePiece);
+  if (cfg.movementType == 'drag'){
+    // mouse drag pieces
+    boardEl.on('mousedown', '.' + CSS.square, mousedownSquare);
+    containerEl.on('mousedown', '.' + CSS.sparePieces + ' .' + CSS.piece,
+      mousedownSparePiece);
+  } else if (cfg.movementType == 'click') {
+    boardEl.on('click', '.' + CSS.square, mousedownSquare);
+    containerEl.on('click', '.' + CSS.sparePieces + ' .' + CSS.piece, mousedownSparePiece);
+  }
 
   // mouse enter / leave square
   boardEl.on('mouseenter', '.' + CSS.square, mouseenterSquare)
@@ -1678,16 +1697,18 @@ function addEvents() {
 
   // IE doesn't like the events on the window object, but other browsers
   // perform better that way
+  var $window;
   if (isMSIE() === true) {
     // IE-specific prevent browser "image drag"
     document.ondragstart = function() { return false; };
-
-    $('body').on('mousemove', mousemoveWindow)
-      .on('mouseup', mouseupWindow);
+    $window = $('body');
+  } else {
+    $window = $(window);
   }
-  else {
-    $(window).on('mousemove', mousemoveWindow)
-      .on('mouseup', mouseupWindow);
+
+  if (cfg.movementType == 'drag'){
+    $window.on('mousemove', mousemoveWindow)
+    $window.on('mouseup', mouseupWindow);
   }
 
   // touch drag pieces
