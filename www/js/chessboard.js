@@ -1346,6 +1346,12 @@ widget.config = function(arg1, arg2) {
   }
 
   expandConfig(config);
+
+  if (cfg.movementType == 'drag'){
+    eventsDrag();
+  } else if (cfg.movementType == 'click') {
+    eventsClick();
+  }
 };
 
 // remove the widget from the page
@@ -1676,25 +1682,7 @@ function mouseleaveSquare(e) {
 //------------------------------------------------------------------------------
 // Initialization
 //------------------------------------------------------------------------------
-
-function addEvents() {
-  // prevent browser "image drag"
-  $('body').on('mousedown mousemove', '.' + CSS.piece, stopDefault);
-
-  if (cfg.movementType == 'drag'){
-    // mouse drag pieces
-    boardEl.on('mousedown', '.' + CSS.square, mousedownSquare);
-    containerEl.on('mousedown', '.' + CSS.sparePieces + ' .' + CSS.piece,
-      mousedownSparePiece);
-  } else if (cfg.movementType == 'click') {
-    boardEl.on('click', '.' + CSS.square, mousedownSquare);
-    containerEl.on('click', '.' + CSS.sparePieces + ' .' + CSS.piece, mousedownSparePiece);
-  }
-
-  // mouse enter / leave square
-  boardEl.on('mouseenter', '.' + CSS.square, mouseenterSquare)
-    .on('mouseleave', '.' + CSS.square, mouseleaveSquare);
-
+function eventsClick(){
   // IE doesn't like the events on the window object, but other browsers
   // perform better that way
   var $window;
@@ -1706,10 +1694,75 @@ function addEvents() {
     $window = $(window);
   }
 
+  $window.off('mousemove')
+  $window.off('mouseup');
+  boardEl.off('mousedown');
+  containerEl.off('mousedown');
+  boardEl.off('click');
+  containerEl.off('click');
+  boardEl.on('click', '.' + CSS.square, mousedownSquare);
+  containerEl.on('click', '.' + CSS.sparePieces + ' .' + CSS.piece, mousedownSparePiece);
+}
+
+function eventsDrag(){
+  // IE doesn't like the events on the window object, but other browsers
+  // perform better that way
+  var $window;
+  if (isMSIE() === true) {
+    // IE-specific prevent browser "image drag"
+    document.ondragstart = function() { return false; };
+    $window = $('body');
+  } else {
+    $window = $(window);
+  }
+
+  $window.off('mousemove')
+  $window.off('mouseup');
+  boardEl.off('mousedown');
+  containerEl.off('mousedown');
+  boardEl.off('click');
+  containerEl.off('click');
+  boardEl.on('mousedown', '.' + CSS.square, mousedownSquare);
+  containerEl.on('mousedown', '.' + CSS.sparePieces + ' .' + CSS.piece, mousedownSparePiece);
+  $window.on('mousemove', mousemoveWindow);
+  $window.on('mouseup', mouseupWindow);
+}
+
+function addEvents() {
+  // prevent browser "image drag"
+  $('body').on('mousedown mousemove', '.' + CSS.piece, stopDefault);
+
+  if (cfg.movementType == 'drag'){
+    eventsDrag();
+    // mouse drag pieces
+    /*boardEl.on('mousedown', '.' + CSS.square, mousedownSquare);
+    containerEl.on('mousedown', '.' + CSS.sparePieces + ' .' + CSS.piece,
+      mousedownSparePiece);*/
+  } else if (cfg.movementType == 'click') {
+    eventsClick();
+    /*boardEl.on('click', '.' + CSS.square, mousedownSquare);
+    containerEl.on('click', '.' + CSS.sparePieces + ' .' + CSS.piece, mousedownSparePiece);*/
+  }
+
+  // mouse enter / leave square
+  boardEl.on('mouseenter', '.' + CSS.square, mouseenterSquare)
+    .on('mouseleave', '.' + CSS.square, mouseleaveSquare);
+
+  // IE doesn't like the events on the window object, but other browsers
+  // perform better that way
+  /*var $window;
+  if (isMSIE() === true) {
+    // IE-specific prevent browser "image drag"
+    document.ondragstart = function() { return false; };
+    $window = $('body');
+  } else {
+    $window = $(window);
+  }
+
   if (cfg.movementType == 'drag'){
     $window.on('mousemove', mousemoveWindow)
     $window.on('mouseup', mouseupWindow);
-  }
+  }*/
 
   // touch drag pieces
   if (isTouchDevice() === true) {
