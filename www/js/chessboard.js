@@ -503,14 +503,19 @@ function expandConfig(config) {
   cfg = $.extend({}, defaultCfg, cfg, config);
 
   SPARE_PIECES = {black: [], white: []};
-  var regexPieces = /([wb][KQRBNP]?)/g;
-  while (match = regexPieces.exec(cfg.sparePieces)){
-    if (match[1].search(/^b/) === 0 || ){
-      SPARE_PIECES.black.push(match[1]);
-    }    if (match[1].search(/^b/) === 0){
-      SPARE_PIECES.black.push(match[1]);
-    }
 
+  var regexPieces = /([wb]?[KQRBNP])/g;
+
+  var match;
+  while (match = regexPieces.exec(cfg.sparePieces)){
+    if (match[1].length === 1){
+      SPARE_PIECES.black.push('b'+match[1]);
+      SPARE_PIECES.white.push('w'+match[1]);
+    } else if (match[1].search(/^b/) === 0){
+      SPARE_PIECES.black.push(match[1]);
+    } else if (match[1].search(/^w/) === 0){
+      SPARE_PIECES.white.push(match[1]);
+    }
   }
 
   if (config.hasOwnProperty('position') === true)
@@ -706,9 +711,11 @@ function buildPiece(piece, hidden, id) {
 }
 
 function buildSparePieces(color) {
-  var pieces = ['wK', 'wQ', 'wR', 'wB', 'wN', 'wP'];
+  var pieces = [];
   if (color === 'black') {
-    pieces = ['bK', 'bQ', 'bR', 'bB', 'bN', 'bP'];
+    pieces = SPARE_PIECES.black;
+  } else {
+    pieces = SPARE_PIECES.white;
   }
 
   var html = '';
@@ -720,7 +727,6 @@ function buildSparePieces(color) {
 }
 
 function addSparePieces(){
-  console.log(containerEl.has('.'+CSS.sparePiecesTop+', .'+CSS.sparePiecesBottom));
   if (containerEl.has('.'+CSS.sparePiecesTop+', .'+CSS.sparePiecesBottom).length == 0){
     containerEl.prepend('<div class="' + CSS.sparePieces + ' ' + CSS.sparePiecesTop + '"></div>');
     containerEl.append('<div class="' + CSS.sparePieces + ' ' + CSS.sparePiecesBottom + '"></div>');
