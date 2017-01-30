@@ -246,6 +246,7 @@ var ANIMATION_HAPPENING = false,
   DRAGGED_PIECE_LOCATION,
   DRAGGED_PIECE_SOURCE,
   DRAGGING_A_PIECE = false,
+  SPARE_PIECES,
   SPARE_PIECE_ELS_IDS = {},
   SQUARE_ELS_IDS = {},
   SQUARE_ELS_OFFSETS;
@@ -423,7 +424,8 @@ var defaultCfg = {
   draggable : false,
   dropOffBoard : 'snapback',
   movementType: 'drag',
-  sparePieces : false,
+  showSparePieces : false,
+  sparePieces : 'KQRBNP',
   pieceTheme : 'img/chesspieces/wikipedia/{piece}.png',
   appearSpeed : 200,
   moveSpeed : 200,
@@ -439,8 +441,11 @@ function validateConfig(config) {
     switch (i) {
       case 'showNotation':
       case 'draggable':
-      case 'sparePieces':
+      case 'showSparePieces':
         isValid = typeof config[i] === "boolean";
+        break;
+      case 'sparePieces':
+        isValid = typeof config[i] === 'string';
         break;
       case 'orientation':
         isValid = config[i] === "white" || config[i] === "black";
@@ -497,13 +502,24 @@ function expandConfig(config) {
 
   cfg = $.extend({}, defaultCfg, cfg, config);
 
+  SPARE_PIECES = {black: [], white: []};
+  var regexPieces = /([wb][KQRBNP]?)/g;
+  while (match = regexPieces.exec(cfg.sparePieces)){
+    if (match[1].search(/^b/) === 0 || ){
+      SPARE_PIECES.black.push(match[1]);
+    }    if (match[1].search(/^b/) === 0){
+      SPARE_PIECES.black.push(match[1]);
+    }
+
+  }
+
   if (config.hasOwnProperty('position') === true)
     CURRENT_POSITION = parsePosition(config.position);
 
   CURRENT_ORIENTATION = cfg.orientation;
 
   // draggable must be true if sparePieces is enabled
-  if (cfg.sparePieces === true)
+  if (cfg.showSparePieces === true)
     cfg.draggable = true;
 
   return true;
@@ -563,17 +579,17 @@ function createElIds() {
 function buildBoardContainer() {
   var html = '<div class="' + CSS.chessboard + '">';
 
-  if (cfg.sparePieces === true) {
+  /*if (cfg.sparePieces === true) {
     html += '<div class="' + CSS.sparePieces + ' ' +
       CSS.sparePiecesTop + '"></div>';
-  }
+}*/
 
   html += '<div class="' + CSS.board + '"></div>';
 
-  if (cfg.sparePieces === true) {
+  /*if (cfg.sparePieces === true) {
     html += '<div class="' + CSS.sparePieces + ' ' +
       CSS.sparePiecesBottom + '"></div>';
-  }
+}*/
 
   html += '</div>';
 
@@ -703,6 +719,23 @@ function buildSparePieces(color) {
   return html;
 }
 
+function addSparePieces(){
+  console.log(containerEl.has('.'+CSS.sparePiecesTop+', .'+CSS.sparePiecesBottom));
+  if (containerEl.has('.'+CSS.sparePiecesTop+', .'+CSS.sparePiecesBottom).length == 0){
+    containerEl.prepend('<div class="' + CSS.sparePieces + ' ' + CSS.sparePiecesTop + '"></div>');
+    containerEl.append('<div class="' + CSS.sparePieces + ' ' + CSS.sparePiecesBottom + '"></div>');
+    sparePiecesTopEl = containerEl.find('.' + CSS.sparePiecesTop);
+    sparePiecesBottomEl = containerEl.find('.' + CSS.sparePiecesBottom);
+    drawBoard();
+  }
+}
+
+function removeSparePieces(){
+  containerEl.find('.'+CSS.sparePiecesTop+', .'+CSS.sparePiecesBottom).remove();
+  sparePiecesTopEl = null;
+  sparePiecesBottomEl = null;
+}
+
 //------------------------------------------------------------------------------
 // Animations
 //------------------------------------------------------------------------------
@@ -823,7 +856,7 @@ function doAnimations(a, oldPos, newPos) {
     }
 
     // add a piece (no spare pieces)
-    if (a[i].type === 'add' && cfg.sparePieces !== true) {
+    if (a[i].type === 'add' && cfg.showSparePieces !== true) {
       $('#' + SQUARE_ELS_IDS[a[i].square])
         .append(buildPiece(a[i].piece, true))
         .find('.' + CSS.piece)
@@ -831,7 +864,7 @@ function doAnimations(a, oldPos, newPos) {
     }
 
     // add a piece from a spare piece
-    if (a[i].type === 'add' && cfg.sparePieces === true) {
+    if (a[i].type === 'add' && cfg.showSparePieces === true) {
       animateSparePieceToSquare(a[i].piece, a[i].square, onFinish);
     }
 
@@ -1003,7 +1036,7 @@ function drawBoard() {
   boardEl.html(buildBoard(CURRENT_ORIENTATION));
   drawPositionInstant();
 
-  if (cfg.sparePieces === true) {
+  if (cfg.showSparePieces === true) {
     if (CURRENT_ORIENTATION === 'white') {
       sparePiecesTopEl.html(buildSparePieces('black'));
       sparePiecesBottomEl.html(buildSparePieces('white'));
@@ -1352,6 +1385,12 @@ widget.config = function(arg1, arg2) {
   } else if (cfg.movementType == 'click') {
     eventsClick();
   }
+
+  if (cfg.showSparePieces) {
+    addSparePieces();
+  } else {
+    removeSparePieces();
+  }
 };
 
 // remove the widget from the page
@@ -1501,10 +1540,10 @@ widget.resize = function() {
   });
 
   // spare pieces
-  if (cfg.sparePieces === true) {
+  /*if (cfg.sparePieces === true) {
     containerEl.find('.' + CSS.sparePieces)
       .css('paddingLeft', (SQUARE_SIZE + BOARD_BORDER_SIZE) + 'px');
-  }
+}*/
 
   // redraw the board
   drawBoard();
@@ -1572,7 +1611,7 @@ function touchstartSquare(e) {
 
 function mousedownSparePiece(e) {
   // do nothing if sparePieces is not enabled
-  if (cfg.sparePieces !== true) return;
+  if (cfg.showSparePieces !== true) return;
 
   var piece = $(this).attr('data-piece');
 
@@ -1581,7 +1620,7 @@ function mousedownSparePiece(e) {
 
 function touchstartSparePiece(e) {
   // do nothing if sparePieces is not enabled
-  if (cfg.sparePieces !== true) return;
+  if (cfg.showSparePieces !== true) return;
 
   var piece = $(this).attr('data-piece');
 
@@ -1782,9 +1821,8 @@ function initDom() {
   containerEl.html(buildBoardContainer());
   boardEl = containerEl.find('.' + CSS.board);
 
-  if (cfg.sparePieces === true) {
-    sparePiecesTopEl = containerEl.find('.' + CSS.sparePiecesTop);
-    sparePiecesBottomEl = containerEl.find('.' + CSS.sparePiecesBottom);
+  if (cfg.showSparePieces === true) {
+    addSparePieces();
   }
 
   // create the drag piece
