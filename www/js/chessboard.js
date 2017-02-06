@@ -1660,7 +1660,7 @@ function touchmoveWindow(e) {
 }
 
 function mouseupWindow(e) {
-  // do nothing if we are not dragging a piece
+   // do nothing if we are not dragging a piece
   if (DRAGGING_A_PIECE !== true) return;
 
   // get the location
@@ -1749,22 +1749,32 @@ function initEvents(){
   }
 }
 
+function eventsClick(){
+  boardEl.off('mousedown click');
+  containerEl.off('mousedown click');
+  boardEl.on('click', '.' + CSS.square, mousedownSquare);
+  containerEl.on('click', '.' + CSS.sparePieces + ' .' + CSS.piece, mousedownSparePiece);
+}
+
+function eventsDrag(){
+  boardEl.off('mousedown click');
+  containerEl.off('mousedown click');
+  boardEl.on('mousedown', '.' + CSS.square, mousedownSquare);
+  containerEl.on('mousedown', '.' + CSS.sparePieces + ' .' + CSS.piece, mousedownSparePiece);
+}
+
 function addEvents() {
   // prevent browser "image drag"
   $('body').on('mousedown mousemove', '.' + CSS.piece, stopDefault);
 
   initEvents();
 
-  var event = 'mousedown';
-
-  if (cfg.movementType == 'click') {
-    event = 'click';
+  if (cfg.movementType == 'drag'){
+    // mouse drag pieces
+    eventsDrag();
+  } else if (cfg.movementType == 'click') {
+    eventsClick();
   }
-
-  boardEl.off('mousedown click');
-  containerEl.off('mousedown click');
-  boardEl.on(event, '.' + CSS.square, mousedownSquare);
-  containerEl.on(event, '.' + CSS.sparePieces + ' .' + CSS.piece, mousedownSparePiece);
 
   // mouse enter / leave square
   boardEl.on('mouseenter', '.' + CSS.square, mouseenterSquare)
